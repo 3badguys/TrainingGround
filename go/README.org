@@ -16,5 +16,10 @@ Link: [[https://golang.google.cn/dl/][golang-download-addr]]
 
 * Usage
 ** First Program
-+ go run helloworld.go
-+ go build helloworld.go; ./helloworld
+#+BEGIN_SRC shell
+  # Run helloworld.go
+  go run helloworld.go
+
+  # Build and then run
+  go build helloworld.go; ./helloworld
+#+END_SRC
