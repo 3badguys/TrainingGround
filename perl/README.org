@@ -1,2 +1,15 @@
 * Introduction
 This is the training ground for perl.
+
+* Usage
+** First Program
+#+BEGIN_SRC shell
+  perl ./helloworld.pl
+#+END_SRC
+
+** Frequently-used options
+| option | describtion  |
+|--------+--------------|
+| -d     | debug        |
+| -c     | check syntax |
+| -e     | execute code |
