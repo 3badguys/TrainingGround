@@ -1,0 +1,11 @@
+* Introduction
+This my training ground. Sometimes, I will collect the code writed day-by-day.
+
+* Languages
+** c
+** c++
+** python
+** java
+** lisp
+** go
+** perl
