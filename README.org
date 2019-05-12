@@ -2,10 +2,11 @@
 This my training ground. Sometimes, I will collect the code writed day-by-day.
 
 * Languages
-** c
-** c++
-** python
-** java
-** lisp
-** go
-** perl
++ [[file:c/README.org][c]]
++ [[file:c++/README.org][c++]]
++ [[file:shell/README.org][shell]]
++ [[file:lisp/README.org][lisp]]
++ [[file:python/README.org][python]]
++ [[file:java/README.org][java]]
++ [[file:go/README.org][go]]
++ [[file:perl/README.org][perl]]
