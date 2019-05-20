@@ -1,2 +1,14 @@
 * Introduction
 This is the training ground for shell.
+
+* Example
+1. Move file to a not exist dir
+#+BEGIN_SRC shell
+  # `mkdir --parents` equal to `mkdir -p`
+  # $_ expands to the last argument passed to the previous shell command, ie: the newly created directory.
+  mkdir --parents ./some/path; mv youfile.txt $_
+#+END_SRC
+2. Replace all string in certain dir
+#+BEGIN_SRC shell
+  sed -i "s/Before_str/After_str/g" `grep Before_str -rl ./some/path`
+#+END_SRC
