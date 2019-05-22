@@ -1,6 +1,19 @@
 * Introduction
 This is the training ground for perl.
 
+* Perldoc
+#+BEGIN_SRC  shell
+  sudo apt install perl-doc # Install perl-doc
+
+  perldoc perl           # Get a list of topics
+  perldoc perlop         # Lookup kyewords(For example, if, while, for, etc)
+  perldoc perlsyn        # Lookup operators(For example, ==, ++, =~, etc)
+  perldoc pelrvar        # Lookup builtin variables(For example, @INC, %INC, @ARG, etc)
+  perldoc -f <function>  # Lookup function. For example, perldoc -f printf
+  perldoc <module>       # Lookup module. For example, perldoc Data::Dumper
+  perldoc -m <module>    # Lookup module's source code. For example, perldoc -m Data::Dumper
+#+END_SRC
+
 * Usage
 ** First Program
 #+BEGIN_SRC shell
@@ -13,3 +26,16 @@ This is the training ground for perl.
 | -d     | debug        |
 | -c     | check syntax |
 | -e     | execute code |
+
+* Perl Tokens
+** __PACKAGE__
+__PACKAGE__ contains the name of the package which is declared at the top of any Perl module
+
+** __LINE__
+__LINE__ token returns the value of the current line number.
+
+** __FILE__
+__FILE__ provides the filename.
+
+** __END__
+__END__ defines the end of the Perl code in the file. Any text that appears after __END__ is ignored by the Perl compiler.
