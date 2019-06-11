@@ -8,6 +8,9 @@ Link: [[https://golang.google.cn/dl/][golang-download-addr]]
 #+BEGIN_SRC shell
   tar -C /usr/local -zxf go1.12.4.linux-amd64.tar.gz
 
+  go get github.com/rogpeppe/godef
+  go get github.com/dougm/goflymake
+
   # ~/.bashrc: add golang exec path to PATH env
   export GOROOT=/usr/local/go
   export GOPATH=$HOME/gocode
