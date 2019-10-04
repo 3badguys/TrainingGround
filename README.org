@@ -10,3 +10,4 @@ This my training ground. Sometimes, I will collect the code writed day-by-day.
 + [[file:java/README.org][java]]
 + [[file:go/README.org][go]]
 + [[file:perl/README.org][perl]]
++ [[file:haskell/README.org][haskell]]
