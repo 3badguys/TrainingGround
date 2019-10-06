@@ -13,3 +13,6 @@ This is training ground for haskell.
 
   runghc xxx.hs
 #+END_SRC
+
+* Some flags
+** TODO TO understand currying?
