@@ -10,6 +10,7 @@ This is training ground for haskell.
 #+BEGIN_SRC shell
   ghci
   ghci> :l xxx -- There is xxx.hs
+  ghci> :m <module1> <module2> -- There are modules, e.g. Data.List
 
   runghc xxx.hs
 #+END_SRC
