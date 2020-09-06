@@ -19,3 +19,9 @@ This is the training ground for shell.
   # -c,  --continue                  resume getting a partially-downloaded file
   wget -c <download_url>
 #+END_SRC
+
+** Debug bash scripts
+#+BEGIN_SRC shell
+  bash -x xxx.sh
+#+END_SRC
+
