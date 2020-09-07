@@ -1,2 +1,8 @@
 * Introduction
 This is the training ground for python.
+
+* SimpleHTTPSever
+#+BEGIN_SRC shell
+  python -m SimpleHTTPServer # URL: localhost:8000
+  python -m SimpleHTTPServer <port_id>  # URL: localhost:<port_id>
+#+END_SRC
