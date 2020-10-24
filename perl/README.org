@@ -37,6 +37,9 @@ This is the training ground for perl.
 | -c     | check syntax |
 | -e     | execute code |
 
+* Perl Predefined Variables
+https://perldoc.perl.org/perlvar
+
 * Perl Tokens
 ** __PACKAGE__
 __PACKAGE__ contains the name of the package which is declared at the top of any Perl module
