@@ -2,10 +2,10 @@
 This my training ground. Sometimes, I will collect the code writed day-by-day.
 
 * Languages
-+ [[file:c/README.org][c]]
-+ [[file:c++/README.org][c++]]
-+ [[file:shell/README.org][shell]]
-+ [[file:lisp/README.org][lisp]]
-+ [[file:python/README.org][python]]
-+ [[file:perl/README.org][perl]]
-+ [[file:haskell/README.org][haskell]]
++ [[file:c/][c]]
++ [[file:c++/][c++]]
++ [[file:shell/][shell]]
++ [[file:lisp/][lisp]]
++ [[file:python/][python]]
++ [[file:perl/][perl]]
++ [[file:haskell/][haskell]]
