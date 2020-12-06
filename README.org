@@ -1,5 +1,5 @@
 * Introduction
-This my training ground. Sometimes, I will collect the code writed day-by-day.
+This is my training ground. Sometimes, I will collect the code written day-by-day.
 
 * Languages
 + [[file:c/][c]]
