@@ -52,3 +52,70 @@ __FILE__ provides the filename.
 
 ** __END__
 __END__ defines the end of the Perl code in the file. Any text that appears after __END__ is ignored by the Perl compiler.
+
+* Perl Details
+** show module
++ @INC → predefined variable. A list of library search paths.
++ %INC → predefined variable. A hash of loaded modules.
+
+** quote string
++ 'single quote' or q[]  → everything is literal.
++ "double quote" or qq[] → ① Backslash is char escape. ② Variables will be evaluated.
+
+** True and False
+Perl does not have a boolean type. Basically, anything that seems should be false, is false. (of course, it can be tricky). The following are false:
++ 0
++ undef
++ "" empty string
++ empty array
++ empty hash
+Everything else is true.
+
+#+BEGIN_SRC perl
+  # Perl does automatic conversion between number and string,
+  # so '0' is false in some contexts because it converts to 0.
+  if ("0") { print "yes"} else { print "no"}   # ⇒ no
+#+END_SRC
+
+** exit loop
++ next → start the next iteration.
++ last → exit the loop.
+
+** compare as number or as string
+The following operators returns -1 if left operand is less than the right operand. If equal, it returns 0, else 1.
++ x <=> y → compare x y as numbers.
++ x cmp y → compare x y as strings.
+
+** system call
++ qx()
++ system()
+
+** environment variable
+#+BEGIN_SRC perl
+  print $ENV{"HOME"};
+#+END_SRC
+
+** pure function consturct
+Written as sub {…}, and applied to argument by the form /pureFunction->(arg)/. For example, a function that squares a number and applied to 3 is written as:
+#+BEGIN_SRC perl
+  sub($) {$_[0]^2} -> (3)
+#+END_SRC
+
+** decorate-sort-dedecorate, aka Schwartzian transform
+http://xahlee.info/perl/perl_sort.html
+
+#+BEGIN_SRC perl
+  # -*- coding: utf-8 -*-
+  # perl
+
+  # sort a array of string, by comparing the number part inside the string
+
+  @li = ('my283.jpg','my23i.jpg','web7-s.jpg','fris88large.jpg');
+
+  # this is “decorate-sort-dedecorate”, aka Schwartzian transform
+  @li2 = map { $_->[0] } sort { $a->[1] <=> $b->[1] } map { [ $_, ($_=~m/(\d+)/)[0] ] } @li;
+  #          ↑ take item               ↑ sort            ↑ create list of pairs [item,key]
+
+  use Data::Dumper;
+  print Dumper(\@li2); # ('web7-s.jpg', 'my23i.jpg', 'fris88large.jpg', 'my283.jpg')
+#+END_SRC
