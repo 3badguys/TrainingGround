@@ -38,6 +38,12 @@ This is the training ground for perl.
 | -e     | execute code |
 
 * Perl Details
+** variable prefix: sigil
+In Perl, every variable name must start with one of {$ @ %}.
++ $ means the VALUE of the variable is a “scalar”. i.e. string, number.
++ @ means the VALUE of the variable is a array.
++ % means the VALUE of the variable is a hash table (aka dictionary, associative list.).
+
 ** show module
 + @INC → predefined variable. A list of library search paths.
 + %INC → predefined variable. A hash of loaded modules.
@@ -80,7 +86,7 @@ The following operators returns -1 if left operand is less than the right operan
 #+END_SRC
 
 ** pure function consturct
-Written as sub {…}, and applied to argument by the form /pureFunction->(arg)/. For example, a function that squares a number and applied to 3 is written as:
+Written as /sub {…}/, and applied to argument by the form /pureFunction->(arg)/. For example, a function that squares a number and applied to 3 is written as:
 #+BEGIN_SRC perl
   sub($) {$_[0]^2} -> (3)
 #+END_SRC
