@@ -37,22 +37,6 @@ This is the training ground for perl.
 | -c     | check syntax |
 | -e     | execute code |
 
-* Perl Predefined Variables
-https://perldoc.perl.org/perlvar
-
-* Perl Tokens
-** __PACKAGE__
-__PACKAGE__ contains the name of the package which is declared at the top of any Perl module
-
-** __LINE__
-__LINE__ token returns the value of the current line number.
-
-** __FILE__
-__FILE__ provides the filename.
-
-** __END__
-__END__ defines the end of the Perl code in the file. Any text that appears after __END__ is ignored by the Perl compiler.
-
 * Perl Details
 ** show module
 + @INC → predefined variable. A list of library search paths.
@@ -119,3 +103,20 @@ http://xahlee.info/perl/perl_sort.html
   use Data::Dumper;
   print Dumper(\@li2); # ('web7-s.jpg', 'my23i.jpg', 'fris88large.jpg', 'my283.jpg')
 #+END_SRC
+
+** predefined variables
+https://perldoc.perl.org/perlvar
+
+** perl tokens
+*** __PACKAGE__
+__PACKAGE__ contains the name of the package which is declared at the top of any Perl module
+
+*** __LINE__
+__LINE__ token returns the value of the current line number.
+
+*** __FILE__
+__FILE__ provides the filename.
+
+*** __END__
+__END__ defines the end of the Perl code in the file. Any text that appears after __END__ is ignored by the Perl compiler.
+
