@@ -1,6 +1,9 @@
 * Introduction
 This is the training ground for perl.
 
+* Perl Source
+http://www.cpan.org/src/
+
 * CPAN Module Installation
 #+BEGIN_SRC shell
   perl -MCPAN -e 'install DBD::mysql'
