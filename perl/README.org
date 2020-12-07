@@ -15,16 +15,25 @@ http://www.cpan.org/src/
 #+END_SRC
 
 * Perldoc
+https://perldoc.perl.org/
 #+BEGIN_SRC  shell
   sudo apt install perl-doc # Install perl-doc
 
-  perldoc perl           # Get a list of topics
-  perldoc perlop         # Lookup kyewords(For example, if, while, for, etc)
-  perldoc perlsyn        # Lookup operators(For example, ==, ++, =~, etc)
-  perldoc pelrvar        # Lookup builtin variables(For example, @INC, %INC, @ARG, etc)
-  perldoc -f <function>  # Lookup function. For example, perldoc -f printf
-  perldoc <module>       # Lookup module. For example, perldoc Data::Dumper
-  perldoc -m <module>    # Lookup module's source code. For example, perldoc -m Data::Dumper
+  perldoc perldoc # Lookup perl documentation
+
+  perldoc perl    # Get a list of topics
+  perldoc perlop  # Lookup kyewords(For example, if, while, for, etc)
+  perldoc perlsyn # Lookup operators(For example, ==, ++, =~, etc)
+  perldoc pelrvar # Lookup builtin variables(For example, @INC, %INC, @ARG, etc)
+
+  perldoc -f <BuiltinFunction> # Lookup function. For example, perldoc -f printf
+
+  perldoc -v <PerlVariable> # Lookup perl predefined variable. For example, perldoc -v '$/'
+
+  perldoc <Module>    # Lookup module. For example, perldoc Data::Dumper
+  perldoc -m <Module> # Lookup module's source code. For example, perldoc -m Data::Dumper
+
+  perldoc -q <FAQ-Keyword> # Lookup perl FAQ. For example, perldoc -q database
 #+END_SRC
 
 * Usage
