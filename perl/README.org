@@ -156,3 +156,15 @@ __END__ defines the end of the Perl code in the file. Any text that appears afte
   # RIGHT: Returns a single scalar element
   my $z = $a[-1];
 #+END_SRC
+
+** Hash Table
+*** defined vs exists
+#+BEGIN_SRC perl
+  my %h;
+  $h{'foo'} = undef;
+
+  defined $h{'foo'} ? print 1 : print 0;
+  # $h{'foo'} is not defined, so it prints 0
+  exists $h{'foo'} ? print 1 : print 0;
+  # but it has been initialized nonetheless, and so this line prints 1
+#+END_SRC
