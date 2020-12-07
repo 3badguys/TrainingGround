@@ -1,10 +1,13 @@
 * Introduction
+
 This is the training ground for perl.
 
 * Perl Source
+
 http://www.cpan.org/src/
 
 * CPAN Module Installation
+
 #+BEGIN_SRC shell
   perl -MCPAN -e 'install DBD::mysql'
 
@@ -15,7 +18,10 @@ http://www.cpan.org/src/
 #+END_SRC
 
 * Perldoc
+
 https://perldoc.perl.org/
+
+** perldoc frequently-used commands
 #+BEGIN_SRC  shell
   sudo apt install perl-doc # Install perl-doc
 
@@ -37,6 +43,7 @@ https://perldoc.perl.org/
 #+END_SRC
 
 * Usage
+
 ** First Program
 #+BEGIN_SRC shell
   perl ./helloworld.pl
@@ -50,6 +57,7 @@ https://perldoc.perl.org/
 | -e     | execute code |
 
 * Perl Details
+
 ** variable prefix: sigil
 In Perl, every variable name must start with one of {$ @ %}.
 + $ means the VALUE of the variable is a “scalar”. i.e. string, number.
@@ -138,3 +146,13 @@ __FILE__ provides the filename.
 *** __END__
 __END__ defines the end of the Perl code in the file. Any text that appears after __END__ is ignored by the Perl compiler.
 
+* Perl Snippets
+
+** List/Array
+#+BEGIN_SRC perl
+  # WRONG: Returns a 1-element list, or 1 in scalar context
+  my $z = @a[-1];
+
+  # RIGHT: Returns a single scalar element
+  my $z = $a[-1];
+#+END_SRC
