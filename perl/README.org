@@ -168,3 +168,13 @@ __END__ defines the end of the Perl code in the file. Any text that appears afte
   exists $h{'foo'} ? print 1 : print 0;
   # but it has been initialized nonetheless, and so this line prints 1
 #+END_SRC
+
+** While Trap
+#+BEGIN_SRC perl
+  while ( readdir(DIR) ) {
+  # WRONG: There may be file name just `0`
+
+  while ( defined( my $line = <STDIN> ) ) {
+  while ( defined( my $file = readdir(DIR) ) ) {
+  # RIGHT
+#+END_SRC
