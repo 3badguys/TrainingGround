@@ -178,3 +178,22 @@ __END__ defines the end of the Perl code in the file. Any text that appears afte
   while ( defined( my $file = readdir(DIR) ) ) {
   # RIGHT
 #+END_SRC
+
+** Reference & Dereference
+#+BEGIN_SRC perl
+  # reference
+  my $sref = \$scalar;
+  my $aref = \@array;
+  my $href = \%hash;
+  my $cref = \&subroutine;
+
+  # get element through reference of array or hash
+  my $stooge = $aref->[1];
+  my $stooge = $href->{Curly};
+
+  # dereference
+  my $other_scalar = ${$sref};
+  my @other_array  = @{$aref};
+  my %other_hash   = %{$href};
+  &{$cref} # Call the referent.
+#+END_SRC
