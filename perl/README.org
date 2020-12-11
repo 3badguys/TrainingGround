@@ -197,3 +197,9 @@ __END__ defines the end of the Perl code in the file. Any text that appears afte
   my %other_hash   = %{$href};
   &{$cref} # Call the referent.
 #+END_SRC
+
+* More to learn
+
+** Devel::Tokenizer::C
+The Devel::Tokenizer::C module provides a small class for creating the essential ANSI C source code for a fast keyword tokenizer.
+https://metacpan.org/pod/Devel::Tokenizer::C
