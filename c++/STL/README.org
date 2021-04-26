@@ -14,3 +14,102 @@ For example, g++8
 + Containers: https://en.cppreference.com/w/cpp/container
 + Algorithms: https://en.cppreference.com/w/cpp/algorithm
 + Iterator: https://en.cppreference.com/w/cpp/iterator
+
+* FAQ
+** vector resize vs reserve
+Vector has two different concepts regarding space: size and capacity. The capacity >= size. When you push_back onto a vector, the size will increase, but typically the capacity will not increase. There are 3 pointer to define size and capacity:
+
+#+BEGIN_SRC C++
+  pointer _M_start;
+  pointer _M_finish;
+  pointer _M_end_of_storage;
+#+END_SRC
+
+*** resize
+#+BEGIN_SRC C++
+    /**
+     ,*  @brief  Resizes the %vector to the specified number of elements.
+     ,*  @param  __new_size  Number of elements the %vector should contain.
+     ,*
+     ,*  This function will %resize the %vector to the specified
+     ,*  number of elements.  If the number is smaller than the
+     ,*  %vector's current size the %vector is truncated, otherwise
+     ,*  default constructed elements are appended.
+     ,*/
+    void
+    resize(size_type __new_size)
+    {
+  if (__new_size > size())
+    _M_default_append(__new_size - size());
+  else if (__new_size < size())
+    _M_erase_at_end(this->_M_impl._M_start + __new_size);
+    }
+
+    /**
+     ,*  @brief  Resizes the %vector to the specified number of elements.
+     ,*  @param  __new_size  Number of elements the %vector should contain.
+     ,*  @param  __x  Data with which new elements should be populated.
+     ,*
+     ,*  This function will %resize the %vector to the specified
+     ,*  number of elements.  If the number is smaller than the
+     ,*  %vector's current size the %vector is truncated, otherwise
+     ,*  the %vector is extended and new elements are populated with
+     ,*  given data.
+     ,*/
+    void
+    resize(size_type __new_size, const value_type& __x)
+    {
+  if (__new_size > size())
+    _M_fill_insert(end(), __new_size - size(), __x);
+  else if (__new_size < size())
+    _M_erase_at_end(this->_M_impl._M_start + __new_size);
+    }
+#+END_SRC
+
+*** reserve
+#+BEGIN_SRC C++
+      /**
+       ,*  @brief  Attempt to preallocate enough memory for specified number of
+       ,*          elements.
+       ,*  @param  __n  Number of elements required.
+       ,*  @throw  std::length_error  If @a n exceeds @c max_size().
+       ,*
+       ,*  This function attempts to reserve enough memory for the
+       ,*  %vector to hold the specified number of elements.  If the
+       ,*  number requested is more than max_size(), length_error is
+       ,*  thrown.
+       ,*
+       ,*  The advantage of this function is that if optimal code is a
+       ,*  necessity and the user can determine the number of elements
+       ,*  that will be required, the user can reserve the memory in
+       ,*  %advance, and thus prevent a possible reallocation of memory
+       ,*  and copying of %vector data.
+       ,*/
+      void
+      reserve(size_type __n);
+
+  template<typename _Tp, typename _Alloc>
+    void
+    vector<_Tp, _Alloc>::
+    reserve(size_type __n)
+    {
+      if (__n > this->max_size())
+    __throw_length_error(__N("vector::reserve"));
+      if (this->capacity() < __n)
+    {
+      const size_type __old_size = size();
+      pointer __tmp = _M_allocate_and_copy(__n,
+        _GLIBCXX_MAKE_MOVE_IF_NOEXCEPT_ITERATOR(this->_M_impl._M_start),
+        _GLIBCXX_MAKE_MOVE_IF_NOEXCEPT_ITERATOR(this->_M_impl._M_finish));
+      _GLIBCXX_ASAN_ANNOTATE_REINIT;
+      std::_Destroy(this->_M_impl._M_start, this->_M_impl._M_finish,
+            _M_get_Tp_allocator());
+      _M_deallocate(this->_M_impl._M_start,
+            this->_M_impl._M_end_of_storage
+            - this->_M_impl._M_start);
+      this->_M_impl._M_start = __tmp;
+      this->_M_impl._M_finish = __tmp + __old_size;
+      this->_M_impl._M_end_of_storage = this->_M_impl._M_start + __n;
+    }
+    }
+#+END_SRC
