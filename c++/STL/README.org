@@ -1,7 +1,16 @@
 * Introduction
 The Standard Template Library (STL) is a software library for the C++ programming language that influenced many parts of the C++ Standard Library. It provides four components called algorithms, containers, functions, and iterators.
 
-** cppreference
+* How to locate source code
+** GCC
++ github: https://github.com/gcc-mirror/gcc
++ path: libstdc++-v3/include/bits/
+
+** Local Environment
+For example, g++8
++ path: /usr/include/c++/8/bits
+
+* Component cppreference
 + Containers: https://en.cppreference.com/w/cpp/container
 + Algorithms: https://en.cppreference.com/w/cpp/algorithm
 + Iterator: https://en.cppreference.com/w/cpp/iterator
