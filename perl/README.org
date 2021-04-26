@@ -202,4 +202,10 @@ __END__ defines the end of the Perl code in the file. Any text that appears afte
 
 ** Devel::Tokenizer::C
 The Devel::Tokenizer::C module provides a small class for creating the essential ANSI C source code for a fast keyword tokenizer.
-https://metacpan.org/pod/Devel::Tokenizer::C
+
++ metacpan: https://metacpan.org/pod/Devel::Tokenizer::C
+
+** Parse::RecDescent
+Parse::RecDescent - Generate Recursive-Descent Parsers.
+
++ metacpan: https://metacpan.org/pod/Parse::RecDescent
