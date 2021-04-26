@@ -25,3 +25,15 @@ This is the training ground for shell.
   bash -x xxx.sh
 #+END_SRC
 
+* ShellCheck
+ShellCheck is a GPLv3 tool that gives warnings and suggestions for bash/sh shell scripts.
+
+** Installation
+#+BEGIN_SRC shell
+  sudo apt install shellcheck
+#+END_SRC
+
+** Reference Links
++ https://github.com/koalaman/shellcheck
++ https://github.com/koalaman/shellcheck/wiki
++ https://www.shellcheck.net/
