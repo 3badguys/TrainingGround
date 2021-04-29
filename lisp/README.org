@@ -24,3 +24,11 @@ This is the training ground for lisp.
 
 ** Scheme
 + Emacs+geiser+Chez
+
+* Elisp
+** environment variable
+Use setenv to change the value of PATH, so that you can run the specific software not in system path:
+#+BEGIN_SRC elisp
+(setenv "HOME" "c:/users/chuic456/Desktop/chuic456_dir/")
+(setenv "PATH" (concat (getenv "PATH") "C:\\users\\chuic456\\Desktop\\chuic456_dir\\ctags;"))
+#+END_SRC
