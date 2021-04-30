@@ -1,0 +1,103 @@
+* Introduction
+
+Office Visual Basic for Applications (VBA) is an event-driven programming language that enables you to extend Office applications.
+
+* How to learn
+
+Just record a macro, and then change the code.
+
++ Link: https://docs.microsoft.com/en-us/office/vba/api/overview/
+
+* Example Code
+
+One of my best friends want to open a restaurant, and he plan to write an application via excel VBA to manager his orders. So I help to write some demo code:
+
+** Get the current time
+#+BEGIN_SRC vba
+Sub DateTime_Click()
+    ' 获取当前日期，用Now的话可以输出到秒
+    Dim CurrentTime As String
+    CurrentTime = Date & " " & Time
+    MsgBox CurrentTime
+End Sub
+#+END_SRC
+
+** Check VIP via phone number
+#+BEGIN_SRC vba
+Sub CheckVIP_Click()
+    ' 获取用户输入输出
+    Dim InputStr As String
+    InputStr = InputBox("请输入你的手机号，查询是否为我们的VIP客户。", "查询VIP", "")
+    
+    If InputStr = "" Then
+        MsgBox "输入的手机号为空，请重新输入手机号查询。"
+        Exit Sub
+    End If
+    
+    Sheets("VIP用户列表").Select
+    VIPCount = Cells(Rows.Count, "A").End(xlUp).Row - 1
+    
+    Dim LineNum As Integer
+    Dim VIPName As String
+    For LineNum = 2 To VIPCount + 1
+        If InputStr = Range("B" & LineNum).Value Then
+            VIPName = Range("A" & LineNum)
+            Sheets("demo首页").Select
+            MsgBox VIPName & "为VIP客户，手机号为: " & InputStr
+            Exit Sub
+        End If
+    Next LineNum
+    
+    Sheets("demo首页").Select
+    MsgBox InputStr & "不为VIP客户!"
+End Sub
+#+END_SRC
+
+** Random generate an order and collect to a specific sheet
+#+BEGIN_SRC vba
+Sub RandomOneLine_Click()
+    ' 随机生成一行数据
+    Dim DishList As Variant
+    Dim DishMap As Object
+    DishList = Array("Chicken", "Duck", "Egg")
+    Set DishMap = CreateObject("Scripting.Dictionary")
+    DishMap("Chicken") = Array("鸡", 50)
+    DishMap("Duck") = Array("鸭", 40)
+    DishMap("Egg") = Array("蛋", 5)
+    
+    Dim RandIndex As Integer
+    Dim RandDish As String
+    Dim DishName As String
+    Dim DishPrice As String
+    RandIndex = Int(DishMap.Count * Rnd)
+    RandDish = DishList(RandIndex)
+    DishName = DishMap(RandDish)(0)
+    DishPrice = DishMap(RandDish)(1)
+    
+    Range("B2").Value = Now
+    Range("D2").Value = DishName
+    Range("C2").Value = DishPrice
+End Sub
+
+Sub CollectToTable_Click()
+    ' 汇总一个记录到目标表里
+    Dim DeskNum As String
+    DeskNum = Range("A1").Value
+    
+    Rows("2:2").Select
+    Selection.Copy
+    Sheets("目标表").Select
+    Dim LineCount
+    LineCount = Cells(Rows.Count, "A").End(xlUp).Row
+    
+    Range("A" & LineCount + 1).Select
+    ActiveSheet.Paste
+    Range("A" & LineCount + 1) = DeskNum
+    
+    Range("A1").Select
+    
+    Sheets("源表").Select
+    Range("A1").Select
+    Application.CutCopyMode = False
+End Sub
+#+END_SRC
