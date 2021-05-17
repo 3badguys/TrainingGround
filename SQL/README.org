@@ -1,0 +1,282 @@
+* Introduction
+*SQL* (/Structured Query Language/) is a standard language for accessing and manipulating databases.
+
+* Get Mysql Version
+#+BEGIN_SRC shell
+  mysql --version
+  mysql -V
+#+END_SRC
+
+#+BEGIN_SRC sql
+  mysql> SELECT VERSION();
+#+END_SRC
+
+* Login Mysql
+#+BEGIN_SRC shell
+  mysql -h $host -P $port -u $user -p$password
+#+END_SRC
+
+* Common SQL
+** LOAD & DUMP
+#+BEGIN_SRC sql
+  MYSQLDUMP ... > __xxx.sql;
+  SOURCE __xxx.sql;
+#+END_SRC
+
+** Comments
+#+BEGIN_SRC sql
+  -- Single line comments.
+
+  /*
+  Multi-line comments.
+  ,*/
+#+END_SRC
+
+** Databases
+#+BEGIN_SRC sql
+  SHOW DATABASES;
+  CREATE DATABASE [IF NOT EXISTS] $database_name;
+
+  USE $database_name;
+  SELECT DATABASE();
+
+  SHOW TABLES;
+  SHOW TABLES FROM $database_name;
+
+  SET NAMES utf8;
+#+END_SRC
+
+** DESC
+#+BEGIN_SRC sql
+  DESC $table_name;
+#+END_SRC
+
+** INSERT INTO
+#+BEGIN_SRC sql
+  INSERT INTO $table_name VALUES (__value1_1, __value1_2, ...), (__value2_1, __value2_2, ...), ...;
+  INSERT INTO $table_name (@column1, @column2 ...) VALUES (__value1_1, __value1_2, ...), (__value2_1, __value2_2, ...), ...;
+  INSERT INTO $table_name SET @column1=__value1, @column2=__value2, ...;
+#+END_SRC
+
+*** INSERT INTO SELECT
++ Copy data from $src_table and inserts it into $dst_table.
++ $dst_table must exists.
++ Data types in $src_table and $dst_table must matches.
++ Note: The existing records in the $dst_table are unaffected.
+
+#+BEGIN_SRC sql
+  INSERT INTO $dst_table SELECT * FROM $src_table WHERE __condition__;
+  INSERT INTO $dst_table (@column1, @column2, @column3, ...) SELECT @column1, @column2, @column3, ... FROM $src_table WHERE __condition__;
+#+END_SRC
+
+** SELECT
+#+BEGIN_SRC sql
+  SELECT @column1, @column2 ... FROM $table_name;
+  SELECT DISTINCT @column1, @column2 ... FROM $table_name;
+
+  SELECT * FROM $table_name;
+#+END_SRC
+
+*** SELECT INTO
++ Copie data from one table into a new table.
++ $dst_table must not exists.
+
+#+BEGIN_SRC sql
+  SELECT * INTO $dst_table [IN $external_database] FROM $src_table WHERE __condition__;
+  SELECT @column1, @column2, @column3, ... INTO $dst_table [IN $external_database] FROM $src_table WHERE __condition__;
+
+  -- use CREATE TABLE similarly
+  CREATE TABLE $dst_table SELECT * FROM $src_table WHERE __condition__;
+  CREATE TABLE $dst_table SELECT @column1, @column2, @column3, ... FROM $src_table WHERE __condition__;
+#+END_SRC
+
+** WHERE
+#+BEGIN_SRC sql
+  SELECT @column1, @column2 ... FROM $table_name WHERE @column_name __operator__ __value;
+  SELECT @column1, @column2 ... FROM $table_name WHERE @column_name BETWEEN __value1 AND __value2;
+  SELECT @column1, @column2 ... FROM $table_name WHERE @column_name NOT BETWEEN __value1 AND __value2;
+  -- WHERE may contain AND, OR or NOT syntax.
+#+END_SRC
+
+** IN
+#+BEGIN_SRC sql
+  SELECT @column1, @column2 ... FROM $table_name WHERE @column_name IN (__value1, __value2 ...);
+  SELECT @column1, @column2 ... FROM $table_name WHERE @column_name IN (__SELECT-statement__);
+#+END_SRC
+
+** ORDER BY
+#+BEGIN_SRC sql
+  SELECT @column1, @column2 ... FROM $table_name ORDER BY @column1, @column2 ... ASC|DESC;
+  SELECT * FROM $table_name ORDER BY @column1, @column2 ... ASC|DESC;
+  SELECT * FROM $table_name ORDER BY @column1 ASC|DESC, @column2 ASC|DESC ...;
+#+END_SRC
+
+** NULL VALUES
++ Can't use /=/ or /<>/ to judge whether value is /NULL/.
++ Can use /<=>/ to also judge /NULL/, but readability is too bad.
+
+#+BEGIN_SRC sql
+  SELECT @column_names FROM $table_name WHERE column_name IS NULL;
+  SELECT @column_names FROM $table_name WHERE column_name IS NOT NULL;
+
+  IFNULL(@column_name, __default_value)
+#+END_SRC
+
+** LIKE
+#+BEGIN_SRC sql
+  SELECT @column1, @column2, ... FROM $table_name WHERE @column_name LIKE %pattern;
+#+END_SRC
+
+*** Wildcard
++ Percent sign (%) represents zero, one, or multiple characters
++ Underscore sign (_) represents one, single character
+
+Some examples:
+| LIKE Operator | Description                                            |
+|---------------+--------------------------------------------------------|
+| LIKE 'a%'     | start with "a"                                         |
+| LIKE '%a'     | end with "a"                                           |
+| LIKE '%or%'   | "or" in any position                                   |
+| LIKE '_r%'    | have "r" in the second position                        |
+| LIKE 'a_%'    | start with "a" and are at least 2 characters in length |
+| LIKE 'a__%'   | start with "a" and are at least 3 characters in length |
+| LIKE 'a%o'    | start with "a" and ends with "o"                       |
+
+Use %, _ literally via /ESCAPE/ character:
+#+BEGIN_SRC sql
+  LIKE '%\_a'; -- default ESCAPE character is backslash \
+  LIKE '%$_a' ESCAPE '$';
+  LIKE '%^_a' ESCAPE '^';
+#+END_SRC
+
+** AS
+#+BEGIN_SRC sql
+  SELECT @column1 AS __alias_1, @column2 AS __alias_2, ... FROM $table_name;
+  SELECT @column1 __alias_1, @column2 __alias_2, ... FROM $table_name;
+
+  SELECT @columns FROM $table1 AS __alias_1, $table2 AS __alias_2, ...;
+  SELECT @columns FROM $table1 __alias_1, $table2 __alias_2, ...;
+#+END_SRC
+
+** GROUP BY
++ /HAVING/ clause is added to SQL because /WHERE/ keyword cannot be used with aggregate functions.
+
+#+BEGIN_SRC sql
+  SELECT @column_names FROM $table_name WHERE __WHERE-condition__ GROUP BY @column_names HAVING __HAVING-condition__ ORDER BY @column_names ASC|DESC;
+#+END_SRC
+
+** UPDATE
+#+BEGIN_SRC sql
+  UPDATE $table_name SET @column1=__value1, @column2=__value2 ... WHERE @column_name __operator__ __value;
+
+  SET sql_safe_updates=1;
+  SHOW VARIABLES LIKE 'sql_safe_updates';
+  SELECT @@sql_safe_updates;
+#+END_SRC
+
+** ALTER
+#+BEGIN_SRC sql
+  ALTER TABLE $table_name ADD|DROP|MODIFY|CHANGE COLUMN @column_name [__data_type__]
+#+END_SRC
+
+** DELETE
+#+BEGIN_SRC sql
+  DELETE FROM $table_name WHERE @column_name __operator__ __value;
+
+  DELETE FROM $table_name;
+  DELETE * FROM $table_name;
+#+END_SRC
+
+** DROP
+#+BEGIN_SRC sql
+  DROP DATABASE [IF EXISTS] $database_name;
+  DROP TABLE [IF EXISTS] $table_name;
+#+END_SRC
+
+** TRUNCATE
+#+BEGIN_SRC sql
+  TRUNCATE TABLE $table_name;
+#+END_SRC
+
+** Operators
+*** Arithmetic Operators
+| Operator | Description |
+|----------+-------------|
+| +        | Add         |
+| *        | Multiply    |
+| /        | Divide      |
+| %        | Modulo      |
+
+*** Bitwise Operators
+| Operator | Description          |
+|----------+----------------------|
+| &        | Bitwise AND          |
+| \vert    | Bitwise OR           |
+| ^        | Bitwise exclusive OR |
+
+*** Comparison Operators
+| Operator | Description              |
+|----------+--------------------------|
+| =        | Equal to                 |
+| >        | Greater than             |
+| <        | Less than                |
+| >=       | Greater than or equal to |
+| <=       | Less than or equal to    |
+| <>       | Not equal to             |
+
+* FAQ
+** Some SELECT examples
+*** constant expression
+#+BEGIN_SRC sql
+  SELECT 100;
+  SELECT 'ConstantString';
+#+END_SRC
+*** arithmetric expression
+#+BEGIN_SRC sql
+  SELECT 5 * 6;
+#+END_SRC
+*** function
+#+BEGIN_SRC sql
+  SELECT USER();
+#+END_SRC
+*** plus(+) expression
+#+BEGIN_SRC sql
+  SELECT 'john' + 10; -- join string should use CONCAT
+#+END_SRC
+
+** Usage of ``
+When use /SELECT/ clause, the @column_name may conflict with SQL keywords.
+
+** SELECT FROM WHERE use LIKE '%%'
+#+BEGIN_SRC sql
+  SELECT * FROM $table_name; -- Contain NULL columns.
+  SELECT * FROM $table_name WHERE @column_name LIKE '%%'; -- Not contain NULL columns.
+#+END_SRC
+
+** Diff of /DELETE/, /DROP/ and /TRUNCATE/
+*** DELETE
++ A /Data Manipulation Language/ Command(*DML*).
++ There is /WHERE/ clause.
++ Restore through /ROLLBACK/.
+#+BEGIN_SRC sql
+  SET autocommit=0
+  START TRANSACTION;
+  DELETE FROM $table_name;
+  ROLLBACK;
+#+END_SRC
++ It scans every row before deleting making it slower and time-consuming. Comparatively slower than /TRUNCATE/.
++ Delete rows or records based on conditions specified in the /WHERE/ clause.
+
+*** DROP
++ A /Data Definition Language/ Command(*DDL*).
++ There is no /WHERE/ clause.
++ Changes cannot be rolled back or undone.
++ Faster and time-saving.
++ Delete the entire table along with its schema and structure respectively.
+
+*** TRUNCATE
++ A /Data Definition Language/ Command(*DDL*).
++ There is no /WHERE/ clause.
++ Changes cannot be rolled back or undone.
++ Faster than /DELETE/.
++ Delete the entire records of a table without affecting the schema of the table.
