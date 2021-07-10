@@ -8,7 +8,7 @@ Just record a macro, and then change the code.
 
 + Link: https://docs.microsoft.com/en-us/office/vba/api/overview/
 
-* Example Code
+* Demo Code
 
 One of my best friends want to open a restaurant, and he plan to write an application via excel VBA to manager his orders. So I help to write some demo code:
 
@@ -99,5 +99,1017 @@ Sub CollectToTable_Click()
     Sheets("源表").Select
     Range("A1").Select
     Application.CutCopyMode = False
+End Sub
+#+END_SRC
+
+* Ordering System
+
+[[file:ordering_system.xlsm][ordering_system.xlsm]]
+
+** Main Logic
+#+BEGIN_SRC vba
+Public gCurrentDeskNum As Integer
+
+Public gHasInitialize As Boolean
+
+Dim PageHeaderMap As Object
+
+Dim HistoryOrderPageName As String
+Dim HistoryOrderPageHeader As Variant
+
+Dim OrderPageName As String
+Dim OrderPageHeader As Variant
+
+Dim PrintOrderTemplatePageName As String
+Dim PrintOrderPageName As String
+
+Dim PrinterInformationPageName As String
+
+Dim DishMapTemplatePageName As String
+
+Public DishMap As Object
+
+Public gTotalAmountLineIndex As Integer
+
+Public gTableCount As Integer
+
+Private Sub InitCustomData(ForceInit As Boolean)
+    If Not ForceInit And gHasInitialize Then
+        Exit Sub
+    End If
+    
+    Set PageHeaderMap = CreateObject("Scripting.Dictionary")
+    PageHeaderMap("DeskNum") = "×ÀºÅ"
+    PageHeaderMap("PrintOrder") = "´òÓ¡¶©µ¥"
+    PageHeaderMap("CheckOut") = "½áÕË"
+    PageHeaderMap("SwitchTable") = "»»×À"
+    PageHeaderMap("Date") = "ÈÕÆÚ"
+    PageHeaderMap("TotalPrice") = "×Ü¼Û(Ôª)"
+    PageHeaderMap("DiscountPrice") = "ÓÅ»Ý(Ôª)"
+    PageHeaderMap("ActualPrice") = "ÊµÊÕ(Ôª)"
+    PageHeaderMap("Dishes") = "²ËÃû+ÊýÁ¿"
+    PageHeaderMap("Price") = "¼Û¸ñ(Ôª)"
+    PageHeaderMap("Amount") = "ÊýÁ¿"
+    
+    ' ¶¨Òå×ÀµÄÊýÁ¿
+    gTableCount = 3
+    
+    HistoryOrderPageName = "ÀúÊ·¶©µ¥"
+    HistoryOrderPageHeader = Array(PageHeaderMap("Date"), PageHeaderMap("DeskNum"), PageHeaderMap("ActualPrice"), PageHeaderMap("DiscountPrice"), PageHeaderMap("TotalPrice"), PageHeaderMap("Dishes"))
+    
+    OrderPageName = "µãµ¥"
+    OrderPageHeader = Array(PageHeaderMap("DeskNum"), PageHeaderMap("PrintOrder"), PageHeaderMap("CheckOut"), PageHeaderMap("SwitchTable"), PageHeaderMap("TotalPrice"), PageHeaderMap("Dishes"))
+    
+    PrintOrderTemplatePageName = "´òÓ¡Ä£°å-ÎðÉ¾"
+    PrintOrderPageName = "¶©µ¥ÏêÇé"
+    
+    PrinterInformationPageName = "´òÓ¡»úÐÅÏ¢"
+    
+    DishMapTemplatePageName = "²Ëµ¥Ä£°å-ÎðÉ¾"
+    Call ReadDishMap
+    
+    gHasInitialize = True
+End Sub
+
+Private Sub ReadDishMap()
+    Set DishMap = CreateObject("Scripting.Dictionary")
+    
+    Dim PreSheet As String
+    PreSheet = ActiveSheet.Name
+    
+    Sheets(DishMapTemplatePageName).Visible = xlSheetVisible
+    Sheets(DishMapTemplatePageName).Select
+    
+    Dim DishName As String
+    Dim DishPrice As Integer
+    Dim CurrentCell As String
+    Dim X As Integer
+    Dim Y As Integer
+    Y = 1
+    Do While Len(Range(Cells(1, Y), Cells(1, Y))) > 0
+        For X = 2 To ActiveSheet.UsedRange.Rows.Count
+            CurrentCell = Range(Cells(X, Y), Cells(X, Y))
+            If Len(CurrentCell) > 0 And CurrentCell <> "ÏîÄ¿" And Range(Cells(X + 1, Y), Cells(X + 1, Y)) <> "ÏîÄ¿" Then
+                DishName = CurrentCell
+                DishPrice = Range(Cells(X, Y + 1), Cells(X, Y + 1))
+                If DishMap.exists(DishName) Then
+                    MsgBox "²ËÆ· " & DishName & " ´æÔÚÖØ¸´£¬ÇëÁªÏµ¹ÜÀíÔ±ÖØÐÂÂ¼Èë²Ëµ¥£¡"
+                End If
+                DishMap(DishName) = DishPrice
+            End If
+        Next X
+        Y = Y + 4
+    Loop
+    
+    Range("A1").Select
+    Sheets(DishMapTemplatePageName).Visible = xlSheetHidden
+    
+    Sheets(PreSheet).Select
+End Sub
+
+Sub InitSystem_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(True)
+    
+    ' ³õÊ¼»¯ÀúÊ·¶©µ¥Ò³
+    Call InitHistoryOrderPage
+    
+    ' ³õÊ¼»¯µãµ¥Ò³
+    Call InitOrderPage
+    
+    ' ³õÊ¼»¯¸÷×ÀµÄÑ¡²ËÒ³
+    Call InitTablePages
+End Sub
+
+Function GetTableSheetName(TableIndex As Integer) As String
+    GetTableSheetName = "×À" & TableIndex
+End Function
+
+Function GetTableIdByName(TableName As String) As Integer
+    Dim RegEx As Object
+    Set RegEx = CreateObject("VBScript.RegExp")
+    With RegEx
+      .Pattern = "[0-9]+"
+    End With
+    GetTableIdByName = RegEx.Execute(TableName)(0)
+End Function
+
+Function CheckTableExist(SheetName As String) As Boolean
+    Dim IsExist As Boolean
+    IsExist = False
+    
+    Dim OneSheet As Worksheet
+    For Each OneSheet In Worksheets
+        If OneSheet.Name = SheetName Then
+            IsExist = True
+            Exit For
+        End If
+    Next OneSheet
+    
+    CheckTableExist = IsExist
+End Function
+
+Function ArrayLength(ByVal ary) As Integer
+    ArrayLength = UBound(ary) - LBound(ary) + 1
+End Function
+
+Private Sub InitHistoryOrderPage()
+    If CheckTableExist(HistoryOrderPageName) Then
+        Exit Sub
+    End If
+    
+    Sheets.Add After:=Sheets(Sheets.Count)
+    Sheets(Sheets.Count).Name = HistoryOrderPageName
+    Sheets(HistoryOrderPageName).Select
+    
+    Dim HeaderColumn As Integer
+    HeaderColumn = ArrayLength(HistoryOrderPageHeader)
+    
+    Range(Cells(1, HeaderColumn), Cells(1, HeaderColumn)).Select
+    Range(Selection, Selection.End(xlToRight)).Select
+    Selection.Merge
+    
+    Dim HeaderIndex As Integer
+    For HeaderIndex = 1 To HeaderColumn
+        Range(Cells(1, HeaderIndex), Cells(1, HeaderIndex)) = HistoryOrderPageHeader(HeaderIndex - 1)
+    Next HeaderIndex
+    
+    Range("A1").Select
+End Sub
+
+Private Sub ClearTableAmount(TableName As String)
+    Sheets(TableName).Select
+    
+    Dim CurrentCell As String
+    Dim X As Integer
+    Dim Y As Integer
+    Y = 1
+    Do While Len(Range(Cells(1, Y), Cells(1, Y))) > 0
+        For X = 2 To ActiveSheet.UsedRange.Rows.Count
+            CurrentCell = Range(Cells(X, Y), Cells(X, Y))
+            If Len(CurrentCell) > 0 And CurrentCell <> "ÏîÄ¿" And Range(Cells(X + 1, Y), Cells(X + 1, Y)) <> "ÏîÄ¿" Then
+                Range(Cells(X, Y + 2), Cells(X, Y + 2)) = 0
+            End If
+        Next X
+        Y = Y + 4
+    Loop
+    
+    Range("A1").Select
+End Sub
+
+Private Sub Discount_Click()
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    Dim DishCount As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    DishCount = Split(ButtonName, "_")(2)
+    
+    Dim DiscountTableForm As UserForm2
+    gTotalAmountLineIndex = DishCount + 5
+    Set DiscountTableForm = New UserForm2
+    DiscountTableForm.Show
+    gTotalAmountLineIndex = 0
+End Sub
+
+Private Sub CancelPrint_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Application.DisplayAlerts = False
+    Sheets(PrintOrderPageName).Delete
+    Application.DisplayAlerts = True
+    
+    Sheets(OrderPageName).Select
+    Range("A1").Select
+End Sub
+
+Function GetKitchenPrinter() As String
+    Dim PrinterName As String
+    
+    Sheets(PrinterInformationPageName).Visible = xlSheetVisible
+    Sheets(PrinterInformationPageName).Select
+    
+    ' Fixme ÖÐÎÄ»·¾³ÕâÀïÓÐ¸ö¿Ó£ºÐèÒª½«Ó¢ÎÄ"on"¸Ä³É"ÔÚ"£¬±ÈÈç£º
+    ' Òì³££ºGP-C80180 Series on Ne00:
+    ' Õý³££ºGP-C80180 Series ÔÚ Ne00:
+    PrinterName = Replace(Range("A2"), " on ", " ÔÚ ")
+    
+    Sheets(PrinterInformationPageName).Visible = xlSheetHidden
+    
+    GetKitchenPrinter = PrinterName
+End Function
+
+Function GetReceptionPrinter() As String
+    Dim PrinterName As String
+    
+    Sheets(PrinterInformationPageName).Visible = xlSheetVisible
+    Sheets(PrinterInformationPageName).Select
+    
+    ' Fixme ÖÐÎÄ»·¾³ÕâÀïÓÐ¸ö¿Ó£ºÐèÒª½«Ó¢ÎÄ"on"¸Ä³É"ÔÚ"£¬±ÈÈç£º
+    ' Òì³££ºGP-C80180 Series on Ne00:
+    ' Õý³££ºGP-C80180 Series ÔÚ Ne00:
+    PrinterName = Replace(Range("B2"), " on ", " ÔÚ ")
+    
+    Sheets(PrinterInformationPageName).Visible = xlSheetHidden
+    
+    GetReceptionPrinter = PrinterName
+End Function
+
+Private Sub ConfirmPrint_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    
+    On Error GoTo PrinterError
+        Dim PrinterName As String
+        PrinterName = GetKitchenPrinter()
+        DefaultPrinter = Application.ActivePrinter
+        Application.ActivePrinter = PrinterName
+        Sheets(PrintOrderPageName).PrintOut
+        Application.ActivePrinter = DefaultPrinter
+    
+    On Error GoTo 0
+        Application.DisplayAlerts = False
+        Sheets(PrintOrderPageName).Delete
+        Application.DisplayAlerts = True
+        
+        Dim TotalPriceColumn As Integer
+        TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+        
+        Sheets(OrderPageName).Select
+        
+        Dim PrintedCount As Integer
+        Dim TotalCount As Integer
+        Dim ColumnIndex As Integer
+        Dim AmountStr As String
+        TotalAmount = 0
+        ColumnIndex = TotalPriceColumn + 1
+        Do While Not IsEmpty(Cells(TableIndex + 1, ColumnIndex))
+            AmountStr = Range(Cells(TableIndex + 1, ColumnIndex + 1), Cells(TableIndex + 1, ColumnIndex + 1))
+            PrintedCount = Split(AmountStr, "|")(0)
+            TotalCount = Split(AmountStr, "|")(1)
+            If PrintedCount < TotalCount Then
+                Range(Cells(TableIndex + 1, ColumnIndex + 1), Cells(TableIndex + 1, ColumnIndex + 1)) = TotalCount & "|" & TotalCount
+            End If
+            ColumnIndex = ColumnIndex + 2
+        Loop
+        
+        Range("A1").Select
+        Exit Sub
+    
+PrinterError:
+    Sheets(OrderPageName).Select
+    MsgBox "´òÓ¡²Ù×÷Ê§°Ü£¬ÇëÁªÏµ¹ÜÀíÔ±¼ì²é´òÓ¡»ú£¡"
+End Sub
+
+Private Sub ConfirmCheckout_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    Dim DishCount As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    DishCount = Split(ButtonName, "_")(2)
+    
+    Dim TotalAmount As Double
+    Dim DiscountAmount As Double
+    Dim ActualAmount As Double
+    TotalAmount = Range(Cells(DishCount + 5, 4), Cells(DishCount + 5, 4))
+    DiscountAmount = Range(Cells(DishCount + 6, 4), Cells(DishCount + 6, 4))
+    ActualAmount = Range(Cells(DishCount + 7, 3), Cells(DishCount + 7, 3))
+    
+    On Error GoTo PrinterError
+        Dim PrinterName As String
+        PrinterName = GetReceptionPrinter()
+        DefaultPrinter = Application.ActivePrinter
+        Application.ActivePrinter = PrinterName
+        Sheets(PrintOrderPageName).PrintOut
+        Application.ActivePrinter = DefaultPrinter
+    
+    On Error GoTo 0
+        Application.DisplayAlerts = False
+        Sheets(PrintOrderPageName).Delete
+        Application.DisplayAlerts = True
+        
+        If Not CheckTableExist(HistoryOrderPageName) Then
+            Call InitHistoryOrderPage
+        End If
+        
+        Dim TotalPriceColumn As Integer
+        TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+        
+        Sheets(OrderPageName).Select
+        Range(Cells(TableIndex + 1, TotalPriceColumn), Cells(TableIndex + 1, TotalPriceColumn)).Select
+        Range(Selection, Selection.End(xlToRight)).Select
+        Selection.Cut
+        
+        Sheets(HistoryOrderPageName).Select
+        Dim LineCount
+        LineCount = Cells(Rows.Count, "A").End(xlUp).Row
+        
+        TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), HistoryOrderPageHeader)
+        Range(Cells(LineCount + 1, TotalPriceColumn), Cells(LineCount + 1, TotalPriceColumn)).Select
+        ActiveSheet.Paste
+        
+        Dim DiscountPriceColumn As Integer
+        Dim ActualPriceColumn As Integer
+        DiscountPriceColumn = GetHeaderIndexByName(PageHeaderMap("DiscountPrice"), HistoryOrderPageHeader)
+        ActualPriceColumn = GetHeaderIndexByName(PageHeaderMap("ActualPrice"), HistoryOrderPageHeader)
+        Range(Cells(LineCount + 1, DiscountPriceColumn), Cells(LineCount + 1, DiscountPriceColumn)) = DiscountAmount
+        Range(Cells(LineCount + 1, ActualPriceColumn), Cells(LineCount + 1, ActualPriceColumn)) = ActualAmount
+        
+        Dim DateColumn As Integer
+        DateColumn = GetHeaderIndexByName(PageHeaderMap("Date"), HistoryOrderPageHeader)
+        Range(Cells(LineCount + 1, DateColumn), Cells(LineCount + 1, DateColumn)) = Now
+        
+        Dim DeskNumColumn As Integer
+        DeskNumColumn = GetHeaderIndexByName(PageHeaderMap("DeskNum"), HistoryOrderPageHeader)
+        Range(Cells(LineCount + 1, DeskNumColumn), Cells(LineCount + 1, DeskNumColumn)) = GetTableSheetName(TableIndex)
+        
+        Range("A1").Select
+        
+        Call ClearTableAmount(GetTableSheetName(TableIndex))
+        
+        Sheets(OrderPageName).Select
+        Range("A1").Select
+        Application.CutCopyMode = False
+        Exit Sub
+        
+PrinterError:
+    Sheets(OrderPageName).Select
+    MsgBox "´òÓ¡²Ù×÷Ê§°Ü£¬ÇëÁªÏµ¹ÜÀíÔ±¼ì²é´òÓ¡»ú£¡"
+End Sub
+
+Private Sub PrintOrder_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    
+    If IsTableIdle(TableIndex) Then
+        MsgBox "×À" & TableIndex & "Î´µã²Ë£¬ÎÞ·¨Ö´ÐÐ´òÓ¡²Ù×÷£¡"
+        Exit Sub
+    End If
+    
+    Dim TotalPriceColumn As Integer
+    TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+    
+    Dim PrintOrderDishes As Object
+    Set PrintOrderDishes = CreateObject("Scripting.Dictionary")
+    Dim PrintedCount As Integer
+    Dim TotalCount As Integer
+    Dim ColumnIndex As Integer
+    Dim DishName As String
+    Dim AmountStr As String
+    Dim TotalAmount As Double
+    TotalAmount = 0
+    ColumnIndex = TotalPriceColumn + 1
+    Do While Not IsEmpty(Cells(TableIndex + 1, ColumnIndex))
+        DishName = Range(Cells(TableIndex + 1, ColumnIndex), Cells(TableIndex + 1, ColumnIndex))
+        DishName = Split(DishName, "/")(0)
+        AmountStr = Range(Cells(TableIndex + 1, ColumnIndex + 1), Cells(TableIndex + 1, ColumnIndex + 1))
+        PrintedCount = Split(AmountStr, "|")(0)
+        TotalCount = Split(AmountStr, "|")(1)
+        If PrintedCount < TotalCount Then
+            PrintOrderDishes(DishName) = TotalCount - PrintedCount
+            TotalAmount = TotalAmount + (DishMap(DishName) * (TotalCount - PrintedCount))
+        End If
+        ColumnIndex = ColumnIndex + 2
+    Loop
+    
+    If PrintOrderDishes.Count < 1 Then
+        MsgBox "×À" & TableIndex & "Ëùµã²ËÆ·¾ùÒÑ´òÓ¡¸øºó³ø£¬ÎÞÐèÖ´ÐÐ´òÓ¡²Ù×÷£¡"
+        Exit Sub
+    End If
+    
+    If CheckTableExist(PrintOrderPageName) Then
+        Application.DisplayAlerts = False
+        Sheets(PrintOrderPageName).Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets(PrintOrderTemplatePageName).Copy After:=Sheets(Sheets.Count)
+    Sheets(Sheets.Count).Name = PrintOrderPageName
+    Sheets(PrintOrderPageName).Visible = xlSheetVisible
+    Sheets(PrintOrderPageName).Select
+    
+    ActiveWindow.DisplayGridlines = False
+    
+    Range("A2:B2") = "Ê±¼ä:" & Now()
+    Range("C2:D2") = "²ÍÎ»:" & TableIndex & "ºÅ"
+    
+    Range("D5") = TotalAmount
+    Dim DiscountAmount As Double
+    Dim ActualAmount As Double
+    DiscountAmount = 0
+    Range("D6") = DiscountAmount
+    ActualAmount = TotalAmount - DiscountAmount
+    Range("C7:D7") = ActualAmount
+    
+    Dim LineIndex As Integer
+    LineIndex = 4
+    Dim OneDish As Variant
+    For Each OneDish In PrintOrderDishes.Keys
+        Range(Cells(LineIndex, 1), Cells(LineIndex, 1)).EntireRow.Insert , CopyOrigin:=xlFormatFromRightOrBelow
+        Range(Cells(LineIndex, 1), Cells(LineIndex, 1)) = OneDish
+        Range(Cells(LineIndex, 2), Cells(LineIndex, 2)) = PrintOrderDishes(OneDish)
+        Range(Cells(LineIndex, 3), Cells(LineIndex, 3)) = DishMap(OneDish)
+        Range(Cells(LineIndex, 4), Cells(LineIndex, 4)) = DishMap(OneDish) * PrintOrderDishes(OneDish)
+        LineIndex = LineIndex + 1
+    Next OneDish
+    
+    Range("A1").Select
+    
+    Dim ButtonRng As Range
+    Dim OpButton As Button
+    Set ButtonRng = ActiveSheet.Range("G1")
+    Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+    With OpButton
+        .OnAction = "CancelPrint_Click"
+        .Caption = "È¡Ïû´òÓ¡"
+        .Name = "CancelPrint_" & TableIndex
+        .Font.Name = "·ÂËÎ"
+    End With
+    
+    Set ButtonRng = ActiveSheet.Range("H1")
+    Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+    With OpButton
+        .OnAction = "ConfirmPrint_Click"
+        .Caption = "È·ÈÏ´òÓ¡"
+        .Name = "ConfirmPrint_" & TableIndex
+        .Font.Name = "·ÂËÎ"
+    End With
+End Sub
+
+Private Sub CheckOut_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    
+    If IsTableIdle(TableIndex) Then
+        MsgBox "×À" & TableIndex & "Î´µã²Ë£¬ÎÞ·¨Ö´ÐÐ½áÕË²Ù×÷£¡"
+        Exit Sub
+    End If
+    
+    Dim TotalPriceColumn As Integer
+    TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+    
+    Dim PrintOrderDishes As Object
+    Set PrintOrderDishes = CreateObject("Scripting.Dictionary")
+    Dim ColumnIndex As Integer
+    Dim DishName As String
+    Dim AmountStr As String
+    Dim TotalAmount As Double
+    TotalAmount = 0
+    ColumnIndex = TotalPriceColumn + 1
+    Do While Not IsEmpty(Cells(TableIndex + 1, ColumnIndex))
+        DishName = Range(Cells(TableIndex + 1, ColumnIndex), Cells(TableIndex + 1, ColumnIndex))
+        DishName = Split(DishName, "/")(0)
+        AmountStr = Range(Cells(TableIndex + 1, ColumnIndex + 1), Cells(TableIndex + 1, ColumnIndex + 1))
+        PrintOrderDishes(DishName) = Split(AmountStr, "|")(1)
+        ColumnIndex = ColumnIndex + 2
+        TotalAmount = TotalAmount + (DishMap(DishName) * CInt(Split(AmountStr, "|")(1)))
+    Loop
+    
+    If CheckTableExist(PrintOrderPageName) Then
+        Application.DisplayAlerts = False
+        Sheets(PrintOrderPageName).Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets(PrintOrderTemplatePageName).Copy After:=Sheets(Sheets.Count)
+    Sheets(Sheets.Count).Name = PrintOrderPageName
+    Sheets(PrintOrderPageName).Visible = xlSheetVisible
+    Sheets(PrintOrderPageName).Select
+    
+    ActiveWindow.DisplayGridlines = False
+    
+    Range("A2:B2") = "Ê±¼ä:" & Now()
+    Range("C2:D2") = "²ÍÎ»:" & TableIndex & "ºÅ"
+    
+    Range("D5") = TotalAmount
+    Dim DiscountAmount As Double
+    Dim ActualAmount As Double
+    DiscountAmount = 0
+    Range("D6") = DiscountAmount
+    ActualAmount = TotalAmount - DiscountAmount
+    Range("C7:D7") = ActualAmount
+    
+    Dim DishCount As Integer
+    DishCount = 0
+    Dim LineIndex As Integer
+    LineIndex = 4
+    Dim OneDish As Variant
+    For Each OneDish In PrintOrderDishes.Keys
+        Range(Cells(LineIndex, 1), Cells(LineIndex, 1)).EntireRow.Insert , CopyOrigin:=xlFormatFromRightOrBelow
+        Range(Cells(LineIndex, 1), Cells(LineIndex, 1)) = OneDish
+        Range(Cells(LineIndex, 2), Cells(LineIndex, 2)) = PrintOrderDishes(OneDish)
+        Range(Cells(LineIndex, 3), Cells(LineIndex, 3)) = DishMap(OneDish)
+        Range(Cells(LineIndex, 4), Cells(LineIndex, 4)) = DishMap(OneDish) * PrintOrderDishes(OneDish)
+        DishCount = DishCount + 1
+        LineIndex = LineIndex + 1
+    Next OneDish
+    
+    Range("A1").Select
+    
+    Dim ButtonRng As Range
+    Dim OpButton As Button
+    Set ButtonRng = ActiveSheet.Range("F1")
+    Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+    With OpButton
+        .OnAction = "Discount_Click"
+        .Caption = "ÊäÈëÕÛ¿Û"
+        .Name = "Discount_" & TableIndex & "_" & DishCount
+        .Font.Name = "·ÂËÎ"
+    End With
+    
+    Set ButtonRng = ActiveSheet.Range("G1")
+    Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+    With OpButton
+        .OnAction = "CancelPrint_Click"
+        .Caption = "È¡Ïû´òÓ¡"
+        .Name = "CancelPrint_" & TableIndex
+        .Font.Name = "·ÂËÎ"
+    End With
+    
+    Set ButtonRng = ActiveSheet.Range("H1")
+    Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+    With OpButton
+        .OnAction = "ConfirmCheckout_Click"
+        .Caption = "È·ÈÏ´òÓ¡"
+        .Name = "ConfirmPrint_" & TableIndex & "_" & DishCount
+        .Font.Name = "·ÂËÎ"
+    End With
+End Sub
+
+Function IsTableIdle(DeskNum As Integer) As Boolean
+    Dim IsIdle As Boolean
+    IsIdle = False
+    
+    Dim TotalPriceColumn As Integer
+    TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+    If IsEmpty(Cells(DeskNum + 1, TotalPriceColumn)) Then
+        IsIdle = True
+    End If
+    
+    IsTableIdle = IsIdle
+End Function
+
+Sub SwitchTable_Internal(SrcTable As Integer, DstTable As Integer)
+    Dim TotalPriceColumn As Integer
+    TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+    Range(Cells(SrcTable + 1, TotalPriceColumn), Cells(SrcTable + 1, TotalPriceColumn)).Select
+    Range(Selection, Selection.End(xlToRight)).Select
+    Selection.Cut
+    
+    Range(Cells(DstTable + 1, TotalPriceColumn), Cells(DstTable + 1, TotalPriceColumn)).Select
+    ActiveSheet.Paste
+    
+    Range("A1").Select
+    Application.CutCopyMode = False
+    
+    Sheets(GetTableSheetName(DstTable)).Name = GetTableSheetName(SrcTable) & "_tmp"
+    Sheets(GetTableSheetName(SrcTable)).Name = GetTableSheetName(DstTable)
+    Sheets(GetTableSheetName(SrcTable) & "_tmp").Name = GetTableSheetName(SrcTable)
+End Sub
+
+Private Sub SwitchTable_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim ButtonName As String
+    Dim TableIndex As Integer
+    ButtonName = Application.Caller
+    TableIndex = Split(ButtonName, "_")(1)
+    
+    If IsTableIdle(TableIndex) Then
+        MsgBox "×À" & TableIndex & "Î´µã²Ë£¬ÎÞ·¨Ö´ÐÐ»»×À²Ù×÷"
+        Exit Sub
+    End If
+    
+    Dim SwitchTableForm As UserForm1
+    gCurrentDeskNum = TableIndex
+    Set SwitchTableForm = New UserForm1
+    SwitchTableForm.Show
+    gCurrentDeskNum = 0
+End Sub
+
+Private Sub InitOrderPage()
+    If CheckTableExist(OrderPageName) Then
+        Application.DisplayAlerts = False
+        Sheets(OrderPageName).Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets.Add After:=Sheets(Sheets.Count)
+    Sheets(Sheets.Count).Name = OrderPageName
+    Sheets(OrderPageName).Select
+    
+    Dim HeaderColumn As Integer
+    HeaderColumn = ArrayLength(OrderPageHeader)
+    
+    Range(Cells(1, HeaderColumn), Cells(1, HeaderColumn)).Select
+    Range(Selection, Selection.End(xlToRight)).Select
+    Selection.Merge
+    
+    Dim HeaderIndex As Integer
+    Dim TableIndex As Integer
+    Dim TableName As String
+    Dim ButtonRng As Range
+    Dim OpButton As Button
+    Dim SwitchTableComboBox As OLEObject
+    For HeaderIndex = 1 To HeaderColumn
+        Range(Cells(1, HeaderIndex), Cells(1, HeaderIndex)) = OrderPageHeader(HeaderIndex - 1)
+        If OrderPageHeader(HeaderIndex - 1) = PageHeaderMap("DeskNum") Then
+            For TableIndex = 1 To gTableCount
+                TableName = GetTableSheetName(TableIndex)
+                Range(Cells(TableIndex + 1, HeaderIndex), Cells(TableIndex + 1, HeaderIndex)) = TableName
+                ActiveSheet.Hyperlinks.Add Anchor:=Range(Cells(TableIndex + 1, HeaderIndex), Cells(TableIndex + 1, HeaderIndex)), Address:="", SubAddress:=TableName & "!A1", TextToDisplay:=TableName
+            Next TableIndex
+        ElseIf OrderPageHeader(HeaderIndex - 1) = PageHeaderMap("PrintOrder") Then
+            For TableIndex = 1 To gTableCount
+                Set ButtonRng = ActiveSheet.Range(Cells(TableIndex + 1, HeaderIndex), Cells(TableIndex + 1, HeaderIndex))
+                Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+                With OpButton
+                    .OnAction = "PrintOrder_Click"
+                    .Caption = "´òÓ¡"
+                    .Name = "PrintOrder_" & TableIndex
+                    .Font.Name = "·ÂËÎ"
+                End With
+            Next TableIndex
+        ElseIf OrderPageHeader(HeaderIndex - 1) = PageHeaderMap("CheckOut") Then
+            For TableIndex = 1 To gTableCount
+                Set ButtonRng = ActiveSheet.Range(Cells(TableIndex + 1, HeaderIndex), Cells(TableIndex + 1, HeaderIndex))
+                Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+                With OpButton
+                    .OnAction = "CheckOut_Click"
+                    .Caption = "½áÕË"
+                    .Name = "CheckOut_" & TableIndex
+                    .Font.Name = "·ÂËÎ"
+                End With
+            Next TableIndex
+        ElseIf OrderPageHeader(HeaderIndex - 1) = PageHeaderMap("SwitchTable") Then
+            For TableIndex = 1 To gTableCount
+                Set ButtonRng = ActiveSheet.Range(Cells(TableIndex + 1, HeaderIndex), Cells(TableIndex + 1, HeaderIndex))
+                Set OpButton = ActiveSheet.Buttons.Add(ButtonRng.Left, ButtonRng.Top, ButtonRng.Width, ButtonRng.Height)
+                With OpButton
+                    .OnAction = "SwitchTable_Click"
+                    .Caption = "»»×À"
+                    .Name = "SwitchTable_" & TableIndex
+                    .Font.Name = "·ÂËÎ"
+                End With
+            Next TableIndex
+        End If
+    Next HeaderIndex
+    
+    Range("A1").Select
+End Sub
+
+Private Sub DeleteAllTablePages()
+    Dim OneSheet As Worksheet
+    For Each OneSheet In Worksheets
+        If OneSheet.Name Like "×À*" Then
+            Application.DisplayAlerts = False
+            Sheets(OneSheet.Name).Delete
+            Application.DisplayAlerts = True
+        End If
+    Next OneSheet
+End Sub
+
+Function GetHeaderIndexByName(HeaderName As String, ByVal HeaderArray) As Integer
+    Dim HeaderIndex As Integer
+    Dim Ret As Integer
+    HeaderIndex = 0
+    Ret = 0
+    For Each OneHeader In HeaderArray
+        HeaderIndex = HeaderIndex + 1
+        If OneHeader = HeaderName Then
+            Ret = HeaderIndex
+            Exit For
+        End If
+    Next OneHeader
+    GetHeaderIndexByName = Ret
+End Function
+
+Private Sub OrderConfirm_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Dim CurrentTableName As String
+    Dim CurrentTableId As Integer
+    CurrentTableName = ActiveSheet.Name
+    CurrentTableId = GetTableIdByName(CurrentTableName)
+    
+    Dim DishName As String
+    Dim Amount As Integer
+    Dim TotalPrice As Integer
+    TotalPrice = 0
+    Dim CurrentTableDishes As Object
+    Set CurrentTableDishes = CreateObject("Scripting.Dictionary")
+    Dim CurrentCell As String
+    Dim X As Integer
+    Dim Y As Integer
+    Y = 1
+    Do While Len(Range(Cells(1, Y), Cells(1, Y))) > 0
+        For X = 2 To ActiveSheet.UsedRange.Rows.Count
+            CurrentCell = Range(Cells(X, Y), Cells(X, Y))
+            If Len(CurrentCell) > 0 And CurrentCell <> "ÏîÄ¿" And Range(Cells(X + 1, Y), Cells(X + 1, Y)) <> "ÏîÄ¿" Then
+                DishName = CurrentCell
+                Amount = Range(Cells(X, Y + 2), Cells(X, Y + 2))
+                If Amount > 0 Then
+                    CurrentTableDishes(DishName) = Amount
+                    TotalPrice = TotalPrice + Amount * DishMap(DishName)
+                End If
+            End If
+        Next X
+        Y = Y + 4
+    Loop
+    
+    If TotalPrice <= 0 Then
+        MsgBox "ÄãÎ´Ñ¡ÔñÈÎºÎ²ËÆ·£¬ÇëÖØÐÂÑ¡ÔñºóÔÙ´ÎÌá½»¡£"
+        Exit Sub
+    End If
+    
+    Dim TotalPriceColumn As Integer
+    TotalPriceColumn = GetHeaderIndexByName(PageHeaderMap("TotalPrice"), OrderPageHeader)
+    
+    Sheets(OrderPageName).Select
+    
+    Dim CurrentOrderDishes As Object
+    Set CurrentOrderDishes = CreateObject("Scripting.Dictionary")
+    Dim AmountStr As String
+    Dim ColumnIndex As Integer
+    Dim TotalAmount As Double
+    TotalAmount = 0
+    ColumnIndex = TotalPriceColumn + 1
+    Do While Not IsEmpty(Cells(CurrentTableId + 1, ColumnIndex))
+        DishName = Range(Cells(CurrentTableId + 1, ColumnIndex), Cells(CurrentTableId + 1, ColumnIndex))
+        DishName = Split(DishName, "/")(0)
+        AmountStr = Range(Cells(CurrentTableId + 1, ColumnIndex + 1), Cells(CurrentTableId + 1, ColumnIndex + 1))
+        CurrentOrderDishes(DishName) = AmountStr
+        ColumnIndex = ColumnIndex + 2
+        TotalAmount = TotalAmount + (DishMap(DishName) * CInt(Split(AmountStr, "|")(1)))
+    Loop
+    
+    Dim HeaderColumn As Integer
+    HeaderColumn = ArrayLength(OrderPageHeader)
+    
+    Range(Cells(CurrentTableId + 1, HeaderColumn), Cells(CurrentTableId + 1, HeaderColumn)).Select
+    Range(Selection, Selection.End(xlToRight)).Select
+    Selection.ClearContents
+    
+    Dim PrintedAmount As Integer
+    Dim Count As Integer
+    Dim OneDish As Variant
+    Count = 0
+    For Each OneDish In CurrentTableDishes.Keys
+        If CurrentTableDishes(OneDish) > 0 Then
+            PrintedAmount = 0
+            If Len(CurrentOrderDishes(OneDish)) > 0 Then
+                PrintedAmount = Split(CurrentOrderDishes(OneDish), "|")(0)
+            End If
+            Range(Cells(CurrentTableId + 1, 2 * Count + HeaderColumn), Cells(CurrentTableId + 1, 2 * Count + HeaderColumn)) = OneDish & "/" & DishMap(OneDish) & "Ôª"
+            Range(Cells(CurrentTableId + 1, 2 * Count + HeaderColumn + 1), Cells(CurrentTableId + 1, 2 * Count + HeaderColumn + 1)) = PrintedAmount & "|" & CurrentTableDishes(OneDish)
+            Count = Count + 1
+        End If
+    Next OneDish
+    Range(Cells(CurrentTableId + 1, TotalPriceColumn), Cells(CurrentTableId + 1, TotalPriceColumn)) = TotalPrice
+    
+    Range("A1").Select
+    Sheets(CurrentTableName).Select
+End Sub
+
+Private Sub JumpOrderPage_Click()
+    ' ³õÊ¼»¯È«¾Ö±äÁ¿
+    Call InitCustomData(False)
+    
+    Sheets(OrderPageName).Select
+    Range("A1").Select
+End Sub
+
+Private Sub InitOneTablePage(TableName As String)
+    Sheets(TableName).Select
+    
+    ActiveWindow.DisplayGridlines = False
+    
+    Dim X As Integer
+    Dim Y As Integer
+    Dim EntryName As String
+    Y = 1
+    Do While Len(Range(Cells(1, Y), Cells(1, Y))) > 0
+        For X = 2 To ActiveSheet.UsedRange.Rows.Count
+            EntryName = Range(Cells(X, Y), Cells(X, Y))
+            If Len(EntryName) > 0 And EntryName <> "ÏîÄ¿" And Range(Cells(X + 1, Y), Cells(X + 1, Y)) <> "ÏîÄ¿" Then
+                Range(Cells(X, Y + 2), Cells(X, Y + 2)) = 0
+                
+                Dim AmountSpinner As OLEObject
+                Dim AmountCell As Range
+                Set AmountCell = Range(Cells(X, Y + 3), Cells(X, Y + 3))
+                Set AmountSpinner = ActiveSheet.OLEObjects.Add(ClassType:="Forms.SpinButton.1", Top:=AmountCell.Top, Left:=AmountCell.Left, Height:=AmountCell.RowHeight, Width:=AmountCell.Width)
+                With AmountSpinner
+                    .LinkedCell = AmountCell.Offset(, -1).Address(0, 0)
+                    With .Object
+                        .Min = 0
+                        .Max = 10
+                        .SmallChange = 1
+                    End With
+                End With
+            End If
+        Next X
+        Y = Y + 4
+    Loop
+    
+    ActiveSheet.Buttons.Add(10, 440, 80, 25).Select
+    Selection.OnAction = "OrderConfirm_Click"
+    Selection.Characters.Text = "È·¶¨Ìá½»"
+    Selection.Font.Name = "·ÂËÎ"
+    Selection.Font.Size = 14
+    
+    ActiveSheet.Buttons.Add(110, 440, 85, 25).Select
+    Selection.OnAction = "JumpOrderPage_Click"
+    Selection.Characters.Text = "»ØÖ÷Ò³"
+    Selection.Font.Name = "·ÂËÎ"
+    Selection.Font.Size = 14
+    
+    Range("A1").Select
+End Sub
+
+Private Sub InitTablePages()
+    Call DeleteAllTablePages
+    
+    Dim TableIndex As Integer
+    Dim SheetName As String
+    For TableIndex = 1 To gTableCount
+        SheetName = GetTableSheetName(TableIndex)
+        If Not CheckTableExist(SheetName) Then
+            Sheets(DishMapTemplatePageName).Copy After:=Sheets(Sheets.Count)
+            Sheets(Sheets.Count).Name = SheetName
+            Sheets(SheetName).Visible = xlSheetVisible
+        End If
+        Call InitOneTablePage(SheetName)
+    Next TableIndex
+    
+    Sheets(OrderPageName).Select
+End Sub
+#+END_SRC
+
+** List Printer Logic
+#+BEGIN_SRC vba
+Option Explicit
+Private Const HKEY_CURRENT_USER As Long = &H80000001
+Private Const HKCU = HKEY_CURRENT_USER
+Private Const KEY_QUERY_VALUE = &H1&
+Private Const ERROR_NO_MORE_ITEMS = 259&
+Private Const ERROR_MORE_DATA = 234
+#If win7 Then
+    Private Declare PtrSafe Function RegOpenKeyEx Lib "advapi32" Alias "RegOpenKeyExA" (ByVal HKey As LongPtr, _
+        ByVal lpSubKey As String, _
+        ByVal ulOptions As LongPtr, _
+        ByVal samDesired As LongPtr, _
+        phkResult As LongPtr) As LongPtr
+#End If
+#If win7 Then
+    Private Declare PtrSafe Function RegEnumValue Lib "advapi32.dll" Alias "RegEnumValueA" ( _
+        ByVal HKey As LongPtr, _
+        ByVal dwIndex As LongPtr, _
+        ByVal lpValueName As String, _
+        lpcbValueName As LongPtr, _
+        ByVal lpReserved As LongPtr, _
+        lpType As LongPtr, _
+        lpData As Byte, _
+        lpcbData As LongPtr) As LongPtr
+#End If
+#If win7 Then
+    Private Declare PtrSafe Function RegCloseKey Lib "advapi32.dll" (ByVal HKey As LongPtr) As LongPtr
+#End If
+Public Function FindPrinters() As String()
+    Dim Printers() As String
+    Dim PNdx As Long
+    Dim HKey As Long
+    Dim Res As Long
+    Dim Ndx As Long
+    Dim oPrinterName As String
+    Dim oPrinterNameLen As Long
+    Dim oDataType As Long
+    Dim oPort() As Byte
+    Dim oPortyArray As String
+    Dim CommaPos As Long
+    Dim ColonPos As Long
+    Dim M As Long
+    
+    ' Registry key constant
+    Const PRINTER_KEY = "Software\Microsoft\Windows NT\CurrentVersion\Devices"
+    
+    PNdx = 0
+    Ndx = 0
+    ' Printer name should be less than 256 characters
+    oPrinterName = String$(256, Chr(0))
+    oPrinterNameLen = 255
+    
+    'Port should be < 1000 characters
+    ReDim oPort(0 To 999)
+    'Consider MAX List of printers < 1000
+    ReDim Printers(1 To 1000)
+    
+    ' open the key whose values enumerate installed printers
+    Res = RegOpenKeyEx(HKCU, PRINTER_KEY, 0&, _
+        KEY_QUERY_VALUE, HKey)
+    ' start enumeration loop of printers
+    Res = RegEnumValue(HKey, Ndx, oPrinterName, _
+        oPrinterNameLen, 0&, oDataType, oPort(0), 1000)
+    ' loop until all values have been enumerated
+    Do Until Res = ERROR_NO_MORE_ITEMS
+        M = InStr(1, oPrinterName, Chr(0))
+        If M > 1 Then
+            ' clean up the oPrinterName
+            oPrinterName = Left(oPrinterName, M - 1)
+        End If
+        ' find position of a comma and colon in the port name
+        CommaPos = InStr(1, oPort, ",")
+        ColonPos = InStr(1, oPort, ":")
+        ' oPort byte array to oPortyArray string
+        On Error Resume Next
+        oPortyArray = Mid(oPort, CommaPos + 1, ColonPos - CommaPos)
+        On Error GoTo 0
+        ' next slot in Printers
+        PNdx = PNdx + 1
+        Printers(PNdx) = oPrinterName & " on " & oPortyArray
+        ' reset  variables
+        oPrinterName = String(255, Chr(0))
+        oPrinterNameLen = 255
+        ReDim oPort(0 To 999)
+        oPortyArray = vbNullString
+        'get the next registry value
+        Ndx = Ndx + 1
+        ' get the next printer
+        Res = RegEnumValue(HKey, Ndx, oPrinterName, oPrinterNameLen, _
+            0&, oDataType, oPort(0), 1000)
+        ' Check error
+        If (Res <> 0) And (Res <> ERROR_MORE_DATA) Then
+            Exit Do
+        End If
+    Loop
+    
+    ReDim Preserve Printers(1 To PNdx)
+    Res = RegCloseKey(HKey)
+    'Outoupt
+    FindPrinters = Printers
+End Function
+
+Sub SelectPrinters_Click()
+    Dim SelectPrintersForm As UserForm3
+    Set SelectPrintersForm = New UserForm3
+    SelectPrintersForm.Show
 End Sub
 #+END_SRC
