@@ -2,12 +2,9 @@
 This is my training ground. Sometimes, I will collect the code written day-by-day.
 
 * Languages
-+ [[file:c/][c]]
 + [[file:c++/][c++]]
 + [[file:shell/][shell]]
-+ [[file:lisp/][lisp]]
 + [[file:python/][python]]
 + [[file:perl/][perl]]
-+ [[file:haskell/][haskell]]
 + [[file:vba/][vba]]
 + [[file:SQL/][SQL]]
